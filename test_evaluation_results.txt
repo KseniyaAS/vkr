@@ -9,7 +9,6 @@ Balanced Acc:      0.982959
 F1 Weighted:       0.993385
 Avg Latency (Inf): 0.002131 sec
 Max Latency (Inf): 0.008690 sec
-Total Wall Time:   11.815105 sec
 
 Decision Source Distribution:
 ml: 100.00%
