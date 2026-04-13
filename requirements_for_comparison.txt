@@ -1,0 +1,14 @@
+numpy==2.4.4
+pandas==3.0.2
+scikit-learn==1.8.0
+scipy==1.17.1
+threadpoolctl==3.6.0
+joblib==1.5.3
+nltk==3.9.4
+pymorphy3==2.0.6
+pymorphy3-dicts-ru==2.4.417150.4580142
+matplotlib==3.10.8
+seaborn==0.13.2
+sentence-transformers==5.3.0
+shap==0.51.0
+torch

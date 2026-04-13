@@ -1,0 +1,10 @@
+CROSS-VALIDATION COMPARISON RESULTS
+
+                          Model  Mean F1 (Weighted)  Std Dev
+TF-IDF Cleaned(Cyr) + LinearSVC            0.977065 0.002496
+   TF-IDF Cleaned(Cyr) + LogReg            0.968724 0.005670
+  Transformer (Raw) + LinearSVC            0.963945 0.003396
+      TF-IDF Raw + RandomForest            0.952471 0.003138
+     Transformer (Raw) + LogReg            0.940708 0.004760
+
+Best Model: TF-IDF Cleaned(Cyr) + LinearSVC (F1: 0.9771)
