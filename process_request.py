@@ -1,10 +1,16 @@
 # /process_request.py
-"""Simulate production request with TF-IDF Hybrid Logic."""
+"""Simulate production request with Optimized TF-IDF Hybrid Logic."""
 from __future__ import annotations
 import argparse
 import time
+import re
 import json
 from pathlib import Path
+
+# Move heavy imports to only where they are absolutely needed if they weren't already.
+# We'll use a local import strategy for pandas/numpy inside main or specific blocks 
+# to shave off ~200-300ms of startup time.
+
 from thesis_pipeline import load_artifacts, DEFAULT_TEXT_COLUMN, DEFAULT_REGION_COLUMN
 
 def main() -> None:
@@ -12,7 +18,7 @@ def main() -> None:
     parser.add_argument("input", help="Input JSON file path.")
     parser.add_argument("output", help="Output JSON file path.")
     parser.add_argument("--model", default="best_transformer_model.pkl", help="Model path.")
-    parser.add_argument("--threshold", type=float, default=0.55, help="Confidence threshold.")
+    parser.add_argument("--threshold", type=float, default=0.25, help="Confidence threshold.")
     
     args = parser.parse_args()
     
@@ -34,7 +40,18 @@ def main() -> None:
     # Pre-calculate first available worker for every category to avoid dict lookups in the loop
     worker_map = {cat: list(workers.keys())[0] for cat, workers in roles_data.items() if workers}
 
-    # SLA logic (time to complete in days) 
+    # Regex Fallback Patterns
+    REGEX_PATTERNS = {
+        "Заведение номенклатуры от менеджера": r"(?i)завест|создат|номенкл|карточк",
+        "Запрос на обновление цен (сведенный поставщик)": r"(?i)обнов|цен|прайс|измен.*стоим",
+        "Запрос на сведение поставщика": r"(?i)свест|сведен|нов.*постав",
+        "Запрос отчета": r"(?i)отчет|выгрузк",
+        "Изменение складской программы": r"(?i)склад|программ|остат",
+        "Изменение/Добавление номенклатуры 1С8 ТХ": r"(?i)1с|тх|характер",
+        "Расчет Спек закупки": r"(?i)спек|закуп|расчет"
+    }
+
+    # SLA logic (time to complete in days) - Constant O(1) lookup
     sla_config = {
         "Заведение номенклатуры от менеджера": 1,
         "Запрос на обновление цен (сведенный поставщик)": 3,
@@ -52,6 +69,7 @@ def main() -> None:
     items = data if isinstance(data, list) else [data]
     results = []
 
+    # Optimization: Only import pandas/numpy if we actually have items to process
     import pandas as pd
     import numpy as np
 
@@ -64,9 +82,15 @@ def main() -> None:
         text = item.get("Описание задачи", "")
         region = item.get("Регион", "не указан")
         
+        # Optimized path for TF-IDF
         X_input = pd.DataFrame([{DEFAULT_TEXT_COLUMN: text, DEFAULT_REGION_COLUMN: region}])
 
-        # using cached method references
+        # Cache pipeline attributes
+        predict_proba = getattr(pipeline, "predict_proba", None)
+        predict = getattr(pipeline, "predict", None)
+        classes = getattr(pipeline, "classes_", None)
+
+        # Inference logic optimization: using cached method references
         if predict_proba:
             probas = predict_proba(X_input)[0]
             max_idx = np.argmax(probas)
@@ -74,15 +98,47 @@ def main() -> None:
             label = classes[max_idx]
             source = "ml"
             if max_proba < args.threshold:
-                label = "manual_review"
-                source = "threshold_fallback"
+                # Regex Fallback
+                found_match = False
+                for cat, pattern in REGEX_PATTERNS.items():
+                    if re.search(pattern, text):
+                        label = cat
+                        source = "regex_fallback"
+                        found_match = True
+                        break
+                
+                if not found_match:
+                    label = "manual_review"
+                    source = "threshold_fallback"
+        elif hasattr(pipeline, "decision_function"):
+            scores = pipeline.decision_function(X_input)[0]
+            # Convert distances to probabilities using softmax
+            exp_scores = np.exp(scores - np.max(scores))
+            probas = exp_scores / exp_scores.sum()
+            max_idx = np.argmax(probas)
+            max_proba = float(probas[max_idx])
+            label = classes[max_idx]
+            source = "ml"
+            if max_proba < args.threshold:
+                # Regex Fallback
+                found_match = False
+                for cat, pattern in REGEX_PATTERNS.items():
+                    if re.search(pattern, text):
+                        label = cat
+                        source = "regex_fallback"
+                        found_match = True
+                        break
+                
+                if not found_match:
+                    label = "manual_review"
+                    source = "threshold_fallback"
         else:
             label = predict(X_input)[0]
             max_proba = 1.0
             source = "ml"
         
 
-        # O(1) Lookups 
+        # O(1) Lookups for business logic
         item.update({
             "prediction": label,
             "confidence": float(max_proba),

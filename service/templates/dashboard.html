@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд - Запросы</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; min-height: 100vh; padding: 20px; }
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 25px; margin-bottom: 30px; }
+        .badge-ml { background-color: #e3f2fd; color: #0d47a1; }
+        .badge-rule { background-color: #f1f8e9; color: #33691e; }
+        .badge-fallback { background-color: #fffde7; color: #f57f17; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="mb-5 text-center">Запросы</h1>
+
+        <div class="table-container">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Описание</th>
+                        <th>Регион</th>
+                        <th>Тип</th>
+                        <th>Исполнитель</th>
+                        <th>Дата, к которой нужно обновление</th>
+                    </tr>
+                </thead>
+                <tbody id="ticketsBody">
+                    <!-- Data will be inserted here -->
+                </tbody>
+            </table>
+            <div class="text-center mt-3">
+                <a href="/" class="btn btn-primary">Создать новую заявку</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchTickets() {
+            const response = await fetch('/tickets_list');
+            if (response.ok) {
+                const tickets = await response.json();
+                const body = document.getElementById('ticketsBody');
+                body.innerHTML = '';
+                
+                tickets.reverse().forEach(t => {
+                    const badgeClass = t.source === 'ml' ? 'badge-ml' : (t.source === 'rule' ? 'badge-rule' : 'badge-fallback');
+                    const row = `
+                        <tr>
+                            <td><a href="/task/${t.id}" class="fw-bold text-decoration-none">#${t.id}</a></td>
+                            <td class="text-truncate" style="max-width: 250px;">${t.text}</td>
+                            <td>${t.region}</td>
+                            <td><strong>${t.prediction}</strong></td>
+                            <td><span class="text-muted"><i class="bi bi-person"></i> ${t.responsible_worker}</span></td>
+                            <td>${t.completion_date}</td>
+                        </tr>
+                    `;
+                    body.insertAdjacentHTML('beforeend', row);
+                });
+            }
+        }
+        
+        // Polling every 5 seconds
+        setInterval(fetchTickets, 5000);
+        fetchTickets();
+    </script>
+</body>
+</html>

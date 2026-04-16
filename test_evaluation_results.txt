@@ -1,29 +1,32 @@
-=== EXPERIMENTAL PIPELINE EVALUATION (test/evaluate_production.py) ===
+=== EXPERIMENTAL PIPELINE EVALUATION (evaluate_production.py) ===
 Model: test/best_transformer_model.pkl
-Samples: 5000
-Threshold: 0.55
+Samples: 4991
+Threshold: 0.25
 
 Overall Metrics:
-Accuracy:          0.993400
-Balanced Acc:      0.982959
-F1 Weighted:       0.993385
-Avg Latency (Inf): 0.002131 sec
-Max Latency (Inf): 0.008690 sec
+Accuracy:          0.998597
+Balanced Acc:      0.995148
+F1 Weighted:       0.998995
+Avg Latency (Inf): 0.002229 sec
+Max Latency (Inf): 0.017743 sec
+Total Wall Time:   11.795382 sec
 
 Decision Source Distribution:
-ml: 100.00%
+ml: 99.92%
+threshold_fallback: 0.08%
 
 Detailed Classification Report:
                                                 precision    recall  f1-score   support
 
+                                 manual_review       0.00      0.00      0.00         0
            Заведение номенклатуры от менеджера       1.00      1.00      1.00      2429
-Запрос на обновление цен (сведенный поставщик)       0.99      0.99      0.99      1309
-                 Запрос на сведение поставщика       0.99      1.00      0.99        69
+Запрос на обновление цен (сведенный поставщик)       1.00      1.00      1.00      1302
+                 Запрос на сведение поставщика       1.00      1.00      1.00        69
                                  Запрос отчета       1.00      1.00      1.00       144
-                 Изменение складской программы       0.97      0.98      0.97       454
-      Изменение/Добавление номенклатуры 1С8 ТХ       0.99      1.00      1.00       525
-                           Расчет Спек закупки       0.98      0.91      0.95        70
+                 Изменение складской программы       1.00      1.00      1.00       453
+      Изменение/Добавление номенклатуры 1С8 ТХ       1.00      1.00      1.00       525
+                           Расчет Спек закупки       1.00      0.97      0.99        69
 
-                                      accuracy                           0.99      5000
-                                     macro avg       0.99      0.98      0.99      5000
-                                  weighted avg       0.99      0.99      0.99      5000
+                                      accuracy                           1.00      4991
+                                     macro avg       0.87      0.87      0.87      4991
+                                  weighted avg       1.00      1.00      1.00      4991

@@ -4,14 +4,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Any
+from typing import Callable, Iterable, Optional, Any
 import pickle
 import re
+import time
 
 import numpy as np
 import pandas as pd
-
+# import nltk  <-- MOVE INSIDE FUNCTIONS
+# from nltk.corpus import stopwords <-- MOVE INSIDE FUNCTIONS
+# from pymorphy3 import MorphAnalyzer <-- MOVE INSIDE FUNCTIONS
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -89,7 +93,7 @@ def build_parser(description: str = "Thesis Pipeline CLI") -> Any:
     parser.add_argument("--model", default="best_transformer_model.pkl", help="Model save path.")
     parser.add_argument("--cv", type=int, default=5, help="Number of folds for Cross-Validation.")
     parser.add_argument("--random-state", type=int, default=42, help="Random seed.")
-    parser.add_argument("--threshold", type=float, default=0.55, help="Confidence threshold.")
+    parser.add_argument("--threshold", type=float, default=0.25, help="Confidence threshold.")
     return parser
 
 def mask_description_and_inn(text: object) -> str:
@@ -102,26 +106,30 @@ def mask_description_and_inn(text: object) -> str:
 def load_dataset(source: str) -> pd.DataFrame:
     """Load the ticket dataset with robust separator and encoding detection."""
     if Path(source).exists():
+        # Common encodings for Cyrillic CSVs (Excel often uses windows-1251 or utf-8-sig)
         encodings = ["utf-8-sig", "utf-8", "windows-1251"]
         df = None
         
         for enc in encodings:
             try:
+                # First try the custom '#' separator
                 df = pd.read_csv(source, sep="#", quotechar='"', encoding=enc, engine="python")
                 if len(df.columns) < 2:
                     raise ValueError("Not enough columns with # separator")
-                break 
+                break # Success
             except:
                 try:
+                    # Fallback to standard comma
                     df = pd.read_csv(source, encoding=enc)
                     if len(df.columns) >= 2:
-                        break 
+                        break # Success
                 except:
                     continue
         
         if df is None:
             raise ValueError(f"Could not parse {source} with any common encoding/separator combination.")
     else:
+        # Remote or legacy path - default to UTF-8
         df = pd.read_csv(source, sep="#", quotechar='"', encoding="utf-8", engine="python")
     
     if "ID" in df.columns:
@@ -144,7 +152,7 @@ def load_artifacts(path: Path) -> Pipeline:
     with open(path, "rb") as f:
         return pickle.load(f)
 
-def predict_ticket(pipeline: Pipeline, text: str, region: str, threshold: float = 0.55) -> tuple[str, float, str]:
+def predict_ticket(pipeline: Pipeline, text: str, region: str, threshold: float = 0.25) -> tuple[str, float, str]:
     combined = f"Регион: {region}. Описание: {text}"
     # Input to the pipeline is a DataFrame for consistency if needed, 
     # but here we use the combined input directly for the Transformer step

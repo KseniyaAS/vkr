@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание заявки - Классификатор</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .form-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 30px; width: 100%; max-width: 600px; }
+        .nav-pills .nav-link { color: #6c757d; cursor: pointer; }
+        .nav-pills .nav-link.active { background-color: #0d6efd; color: white; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2 class="text-center mb-4">Новый запрос</h2>
+        
+        <ul class="nav nav-pills nav-fill mb-4" id="formTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="simple-tab" data-bs-toggle="pill" data-bs-target="#simpleForm" type="button" role="tab">Поставки</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="detailed-tab" data-bs-toggle="pill" data-bs-target="#detailedForm" type="button" role="tab">Обеспечение</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="formTabsContent">
+            <!-- Form 1: Simple -->
+            <div class="tab-pane fade show active" id="simpleForm" role="tabpanel">
+                <form id="ticketForm1">
+                    <div class="mb-3">
+                        <label class="form-label">Описание задачи</label>
+                        <textarea name="Описание задачи" class="form-control" rows="4" placeholder="Введите текст заявки..." required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Регион</label>
+                        <select name="Регион" class="form-select">
+                            <option value="не указан">не указан</option>
+                            <option value="МСК">МСК</option>
+                            <option value="СПБ">СПБ</option>
+                            <option value="Все">Все</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Создать</button>
+                </form>
+            </div>
+
+            <!-- Form 2: Detailed -->
+            <div class="tab-pane fade" id="detailedForm" role="tabpanel">
+                <form id="ticketForm2">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small">Бренд-менеджер</label>
+                            <input type="text" name="brand" class="form-control" placeholder="ФИО">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small">ИНН</label>
+                            <input type="text" name="inn" class="form-control" placeholder="10 или 12 цифр">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label small">Ед. изм.</label>
+                            <input type="text" name="unit" class="form-control" placeholder="шт/компл">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label small">Размеры</label>
+                            <input type="text" name="size" class="form-control" placeholder="длина х ширина">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label small">Вес</label>
+                            <input type="text" name="weight" class="form-control" placeholder="0.00 кг">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Текстовое описание..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Создать</button>
+                </form>
+            </div>
+        </div>
+
+        <hr class="my-4">
+        <div class="text-center">
+            <a href="/dashboard" class="btn btn-outline-secondary btn-sm">Перейти к списку задач</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function submitData(data) {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert('Заявка успешно создана!');
+                e.target.reset();
+            } else {
+                alert('Ошибка при создании!');
+            }
+        }
+
+        // Handler for Form 1
+        document.getElementById('ticketForm1').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                "Описание задачи": formData.get("Описание задачи"),
+                "Регион": formData.get("Регион")
+            };
+            await submitData(data);
+        };
+
+        // Handler for Form 2
+        document.getElementById('ticketForm2').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const brand = formData.get('brand');
+            const inn = formData.get('inn');
+            const unit = formData.get('unit');
+            const size = formData.get('size');
+            const weight = formData.get('weight');
+            const desc = formData.get('description');
+
+            let combinedTextParts = [];
+            if (brand) combinedTextParts.push(`Бренд-менеджер: ${brand}`);
+            if (inn) combinedTextParts.push(`ИНН: ${inn}`);
+            if (unit) combinedTextParts.push(`Единица измерения: ${unit}`);
+            if (size) combinedTextParts.push(`Размеры: ${size}`);
+            if (weight) combinedTextParts.push(`Вес: ${weight}`);
+            
+            const combinedText = combinedTextParts.length > 0 
+                ? combinedTextParts.join(', ') + '. ' + desc 
+                : desc;
+
+            const data = {
+                "Описание задачи": combinedText,
+                "Регион": "не указан"
+            };
+            await submitData(data);
+        };
+    </script>
+</body>
+</html>
